@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package idp.uds;
+
+option go_package = "github.com/idp-service/pb";
+
+import "google/protobuf/any.proto";
+
+// ========== 握手消息 ==========
+message HandshakeRequest {
+  string version = 1;
+  Format format = 2;
+  repeated string supported_versions = 3;
+}
+
+message HandshakeResponse {
+  Status status = 1;
+  string version = 2;
+  Format format = 3;
+  string error_message = 4;
+}
+
+// ========== 心跳消息 ==========
+message PingRequest {
+  string request_id = 1;
+  int64 timestamp = 2;
+}
+
+message PongResponse {
+  string request_id = 1;
+  int64 timestamp = 2;
+}
+
+// ========== 通用请求与响应 ==========
+message Request {
+  string request_id = 1;
+  string action = 2;
+  google.protobuf.Any payload = 3;
+}
+
+message Response {
+  string request_id = 1;
+  bool success = 2;
+  string error = 3;
+  google.protobuf.Any payload = 4;
+}
+
+// ========== 认证消息 ==========
+message AuthRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message AuthResponse {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string display_name = 4;
+}
+
+// ========== 获取用户信息消息 ==========
+message GetUserRequest {
+  string user_id = 1;
+  string username = 2;
+}
+
+message GetUserResponse {
+  UserInfo user = 1;
+}
+
+message UserInfo {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string display_name = 4;
+  repeated OrgInfo organizations = 5;
+}
+
+message OrgInfo {
+  string org_id = 1;
+  string org_name = 2;
+  string role = 3;
+}
+
+// ========== 触发同步消息 ==========
+message TriggerSyncRequest {
+  string source_system = 1;
+  SyncType sync_type = 2;
+}
+
+message TriggerSyncResponse {
+  string job_id = 1;
+  string estimated_duration = 2;
+  string message = 3;
+}
+
+// ========== 错误响应 ==========
+message ErrorResponse {
+  bool success = 1;
+  string error = 2;
+  ErrorCode error_code = 3;
+}
+
+// ========== 枚举类型 ==========
+enum Format {
+  JSON = 0;
+  PROTOBUF = 1;
+}
+
+enum Status {
+  OK = 0;
+  ERROR = 1;
+}
+
+enum SyncType {
+  FULL = 0;
+  INCREMENTAL = 1;
+}
+
+enum ErrorCode {
+  UNKNOWN = 0;
+  MESSAGE_TOO_LARGE = 1;
+  INVALID_FORMAT = 2;
+}
