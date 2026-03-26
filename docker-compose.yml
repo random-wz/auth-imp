@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: idp-postgres
+    environment:
+      POSTGRES_DB: idp_service
+      POSTGRES_USER: idp_user
+      POSTGRES_PASSWORD: idp_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U idp_user -d idp_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  idp-server:
+    build: .
+    container_name: idp-server
+    environment:
+      USE_PG: "true"
+      DATABASE_URL: "postgres://idp_user:idp_password@postgres:5432/idp_service?sslmode=disable"
+      GIN_MODE: release
+    ports:
+      - "8080:8080"
+    volumes:
+      - /tmp/idp-uds.sock:/tmp/idp-uds.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

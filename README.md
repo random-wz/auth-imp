@@ -106,6 +106,116 @@ GIN_MODE=release ./bin/idp-server
 
 ---
 
+## 数据库支持
+
+项目支持两种存储方式：
+
+### 内存存储（默认）
+
+适用于开发和测试环境，数据不持久化。
+
+```bash
+./bin/idp-server
+```
+
+### PostgreSQL 存储
+
+适用于生产环境，数据持久化到 PostgreSQL。
+
+**1. 初始化数据库**
+
+```bash
+# 创建数据库
+createdb idp_service
+
+# 执行初始化脚本
+psql idp_service < migrations/001_init.sql
+```
+
+**2. 配置环境变量**
+
+```bash
+export USE_PG=true
+export DATABASE_URL="postgres://user:password@localhost:5432/idp_service?sslmode=disable"
+```
+
+**3. 启动服务**
+
+```bash
+./bin/idp-server
+```
+
+---
+
+## CLI 工具使用
+
+项目提供 `idpctl` 命令行工具用于管理 IDP 服务。
+
+### 构建
+
+```bash
+make build
+# 或
+go build -o idpctl ./cmd/idpctl
+```
+
+### 认证
+
+```bash
+# 登录获取 token（REST API）
+./idpctl auth login admin Admin@123456
+
+# 使用 UDS 登录
+./idpctl --use-uds auth login admin Admin@123456
+```
+
+### 用户管理
+
+```bash
+# 列出用户（支持分页）
+./idpctl --token <TOKEN> user list --page 1 --page-size 10
+
+# 创建用户
+./idpctl --token <TOKEN> user create alice alice@123 alice@example.com
+
+# 获取用户信息
+./idpctl --token <TOKEN> user get alice
+
+# 更新用户
+./idpctl --token <TOKEN> user update <user_id> '{"display_name":"Alice Updated"}'
+
+# 删除用户
+./idpctl --token <TOKEN> user delete <user_id>
+```
+
+### 组织管理
+
+```bash
+# 创建组织
+./idpctl --token <TOKEN> org create '{"name":"Engineering"}'
+
+# 列出组织
+./idpctl --token <TOKEN> org list
+
+# 添加成员
+./idpctl --token <TOKEN> org add-member <org_id> '{"user_id":"<user_id>","role":"member"}'
+```
+
+### 群组管理
+
+```bash
+# 创建群组
+./idpctl --token <TOKEN> group create '{"name":"Developers","description":"Dev team"}'
+
+# 列出群组
+./idpctl --token <TOKEN> group list
+
+# 添加成员
+./idpctl --token <TOKEN> group add-member <group_id> '{"user_id":"<user_id>"}'
+```
+
+---
+
 ## REST API
 
 所有需要认证的接口须在请求头中携带 JWT Token：

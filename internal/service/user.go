@@ -106,6 +106,11 @@ func (s *UserService) Login(username, password string) (*model.LoginResponse, er
 	if err != nil {
 		return nil, err
 	}
+
+	// 设置用户在线状态
+	s.userStore.Update(&model.User{ID: u.ID, IsOnline: true})
+	u.IsOnline = true
+
 	token, expires, err := s.authSvc.GenerateToken(u.ID, u.Username)
 	if err != nil {
 		return nil, err
@@ -134,4 +139,9 @@ func (s *UserService) CreateSyncJob(req model.CreateSyncJobRequest) (*model.Sync
 
 func (s *UserService) GetSyncJob(id string) (*model.SyncJob, error) {
 	return s.syncStore.GetByID(id)
+}
+
+// Logout 登出并设置用户离线
+func (s *UserService) Logout(userID string) error {
+	return s.userStore.Update(&model.User{ID: userID, IsOnline: false})
 }

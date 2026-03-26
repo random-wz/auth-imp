@@ -11,29 +11,24 @@ import (
 
 // MemoryStore 基于内存的用户存储实现（用于测试和开发）
 type MemoryStore struct {
-	mu    sync.RWMutex
-	users map[string]*model.User // key: id
-	byUsername map[string]string // username -> id
-	byEmail    map[string]string // email -> id
+	users      sync.Map // key: id -> *model.User
+	byUsername sync.Map // username -> id
+	byEmail    sync.Map // email -> id
 }
 
 // NewMemoryStore 创建内存存储实例
 func NewMemoryStore() *MemoryStore {
-	return &MemoryStore{
-		users:      make(map[string]*model.User),
-		byUsername: make(map[string]string),
-		byEmail:    make(map[string]string),
-	}
+	return &MemoryStore{}
 }
 
 func (s *MemoryStore) Create(user *model.User) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if _, ok := s.byUsername[user.Username]; ok {
+	// 检查用户名是否已存在
+	if _, exists := s.byUsername.LoadOrStore(user.Username, user.ID); exists {
 		return ErrUserAlreadyExists
 	}
-	if _, ok := s.byEmail[user.Email]; ok {
+	// 检查邮箱是否已存在
+	if _, exists := s.byEmail.LoadOrStore(user.Email, user.ID); exists {
+		s.byUsername.Delete(user.Username)
 		return ErrUserAlreadyExists
 	}
 
@@ -45,18 +40,17 @@ func (s *MemoryStore) Create(user *model.User) error {
 	}
 
 	clone := *user
-	s.users[user.ID] = &clone
-	s.byUsername[user.Username] = user.ID
-	s.byEmail[user.Email] = user.ID
+	s.users.Store(user.ID, &clone)
 	return nil
 }
 
 func (s *MemoryStore) GetByID(id string) (*model.User, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	u, ok := s.users[id]
-	if !ok || u.Status == model.UserStatusDeleted {
+	val, ok := s.users.Load(id)
+	if !ok {
+		return nil, ErrUserNotFound
+	}
+	u := val.(*model.User)
+	if u.Status == model.UserStatusDeleted {
 		return nil, ErrUserNotFound
 	}
 	clone := *u
@@ -64,93 +58,80 @@ func (s *MemoryStore) GetByID(id string) (*model.User, error) {
 }
 
 func (s *MemoryStore) GetByUsername(username string) (*model.User, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	id, ok := s.byUsername[username]
+	idVal, ok := s.byUsername.Load(username)
 	if !ok {
 		return nil, ErrUserNotFound
 	}
-	u, ok := s.users[id]
-	if !ok || u.Status == model.UserStatusDeleted {
-		return nil, ErrUserNotFound
-	}
-	clone := *u
-	return &clone, nil
+	return s.GetByID(idVal.(string))
 }
 
 func (s *MemoryStore) GetByEmail(email string) (*model.User, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	id, ok := s.byEmail[email]
+	idVal, ok := s.byEmail.Load(email)
 	if !ok {
 		return nil, ErrUserNotFound
 	}
-	u, ok := s.users[id]
-	if !ok || u.Status == model.UserStatusDeleted {
-		return nil, ErrUserNotFound
-	}
-	clone := *u
-	return &clone, nil
+	return s.GetByID(idVal.(string))
 }
 
 func (s *MemoryStore) Update(user *model.User) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	existing, ok := s.users[user.ID]
-	if !ok || existing.Status == model.UserStatusDeleted {
+	val, ok := s.users.Load(user.ID)
+	if !ok {
+		return ErrUserNotFound
+	}
+	existing := val.(*model.User)
+	if existing.Status == model.UserStatusDeleted {
 		return ErrUserNotFound
 	}
 
+	updated := *existing
+
 	// 更新 email 索引
 	if user.Email != "" && user.Email != existing.Email {
-		if _, taken := s.byEmail[user.Email]; taken {
+		if _, exists := s.byEmail.LoadOrStore(user.Email, user.ID); exists {
 			return ErrUserAlreadyExists
 		}
-		delete(s.byEmail, existing.Email)
-		s.byEmail[user.Email] = user.ID
-		existing.Email = user.Email
+		s.byEmail.Delete(existing.Email)
+		updated.Email = user.Email
 	}
 
 	if user.DisplayName != "" {
-		existing.DisplayName = user.DisplayName
+		updated.DisplayName = user.DisplayName
 	}
 	if user.Status != "" {
-		existing.Status = user.Status
+		updated.Status = user.Status
 	}
-	existing.UpdatedAt = time.Now()
+	updated.UpdatedAt = time.Now()
 
-	clone := *existing
-	s.users[user.ID] = &clone
+	s.users.Store(user.ID, &updated)
 	return nil
 }
 
 func (s *MemoryStore) Delete(id string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	u, ok := s.users[id]
-	if !ok || u.Status == model.UserStatusDeleted {
+	val, ok := s.users.Load(id)
+	if !ok {
 		return ErrUserNotFound
 	}
-	u.Status = model.UserStatusDeleted
-	u.UpdatedAt = time.Now()
+	u := val.(*model.User)
+	if u.Status == model.UserStatusDeleted {
+		return ErrUserNotFound
+	}
+	updated := *u
+	updated.Status = model.UserStatusDeleted
+	updated.UpdatedAt = time.Now()
+	s.users.Store(id, &updated)
 	return nil
 }
 
 func (s *MemoryStore) List(offset, limit int) ([]*model.User, int64, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	var all []*model.User
-	for _, u := range s.users {
+	s.users.Range(func(key, value interface{}) bool {
+		u := value.(*model.User)
 		if u.Status != model.UserStatusDeleted {
 			clone := *u
 			all = append(all, &clone)
 		}
-	}
+		return true
+	})
 
 	total := int64(len(all))
 	if offset >= len(all) {
@@ -164,14 +145,12 @@ func (s *MemoryStore) List(offset, limit int) ([]*model.User, int64, error) {
 }
 
 func (s *MemoryStore) Search(query string, offset, limit int) ([]*model.User, int64, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	query = strings.ToLower(query)
 	var matched []*model.User
-	for _, u := range s.users {
+	s.users.Range(func(key, value interface{}) bool {
+		u := value.(*model.User)
 		if u.Status == model.UserStatusDeleted {
-			continue
+			return true
 		}
 		if strings.Contains(strings.ToLower(u.Username), query) ||
 			strings.Contains(strings.ToLower(u.Email), query) ||
@@ -179,7 +158,8 @@ func (s *MemoryStore) Search(query string, offset, limit int) ([]*model.User, in
 			clone := *u
 			matched = append(matched, &clone)
 		}
-	}
+		return true
+	})
 
 	total := int64(len(matched))
 	if offset >= len(matched) {

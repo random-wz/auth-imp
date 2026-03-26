@@ -19,6 +19,7 @@ type User struct {
 	PasswordHash string     `json:"-" gorm:"not null"`
 	DisplayName  string     `json:"display_name"`
 	Status       UserStatus `json:"status" gorm:"default:active"`
+	IsOnline     bool       `json:"is_online" gorm:"default:false"`
 	ExternalID   string     `json:"external_id,omitempty"`
 	SourceSystem string     `json:"source_system,omitempty"`
 	CreatedAt    time.Time  `json:"created_at"`

@@ -159,3 +159,17 @@ func JWTMiddleware(authSvc *auth.Service) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// Logout POST /api/v1/auth/logout
+func (h *Handler) Logout(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	if err := h.userSvc.Logout(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "logout failed"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
+}
