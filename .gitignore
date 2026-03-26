@@ -1,0 +1,22 @@
+# Binaries
+bin/
+/idpctl
+/idp-server
+
+# Logs
+*.log
+
+# Test coverage
+*.out
+coverage.html
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

@@ -19,12 +19,6 @@ const (
 	MaxJSONMessageSize = 512 << 10
 	// HandshakeTimeout 握手超时时间
 	HandshakeTimeout = 5 * time.Second
-	// HeartbeatInterval 心跳间隔
-	HeartbeatInterval = 30 * time.Second
-	// HeartbeatTimeout 心跳超时
-	HeartbeatTimeout = 10 * time.Second
-	// MaxMissedHeartbeats 最大丢失心跳次数
-	MaxMissedHeartbeats = 3
 	// IdleTimeout 连接最大空闲时间
 	IdleTimeout = 60 * time.Second
 	// ProtocolVersion 协议版本
