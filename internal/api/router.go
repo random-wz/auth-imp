@@ -1,6 +1,9 @@
 package api
 
 import (
+	"net/http/pprof"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/idp-service/internal/auth"
 )
@@ -14,6 +17,23 @@ func SetupRouter(h *Handler, dh *DirectoryHandler, authSvc *auth.Service) *gin.E
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+
+	// pprof 性能分析端点（可选）
+	if os.Getenv("ENABLE_PPROF") == "true" {
+		debug := r.Group("/debug/pprof")
+		{
+			debug.GET("/", gin.WrapF(pprof.Index))
+			debug.GET("/cmdline", gin.WrapF(pprof.Cmdline))
+			debug.GET("/profile", gin.WrapF(pprof.Profile))
+			debug.GET("/symbol", gin.WrapF(pprof.Symbol))
+			debug.GET("/trace", gin.WrapF(pprof.Trace))
+			debug.GET("/allocs", gin.WrapH(pprof.Handler("allocs")))
+			debug.GET("/heap", gin.WrapH(pprof.Handler("heap")))
+			debug.GET("/goroutine", gin.WrapH(pprof.Handler("goroutine")))
+			debug.GET("/block", gin.WrapH(pprof.Handler("block")))
+			debug.GET("/mutex", gin.WrapH(pprof.Handler("mutex")))
+		}
+	}
 
 	v1 := r.Group("/api/v1")
 	{
