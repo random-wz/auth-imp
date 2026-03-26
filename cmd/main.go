@@ -4,6 +4,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
+	"runtime/debug"
+	"strconv"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -23,6 +26,8 @@ const (
 )
 
 func main() {
+	// 设置资源限制
+	setResourceLimits()
 	// 初始化依赖
 	userStore := user.NewMemoryStore()
 	syncStore := user.NewMemorySyncJobStore()
@@ -89,4 +94,25 @@ func bootstrapAdmin(store user.Store, authSvc *auth.Service) {
 	}
 	log.Printf("[Bootstrap] Admin user created: username=%s password=%s",
 		bootstrapAdminUser, bootstrapAdminPassword)
+}
+
+func setResourceLimits() {
+	// CPU 限制（GOMAXPROCS）
+	cpuLimit := getEnvInt("CPU_LIMIT", 1)
+	runtime.GOMAXPROCS(cpuLimit)
+	log.Printf("[Resource] CPU limit: %d core(s)", cpuLimit)
+
+	// 内存限制（GOMEMLIMIT）
+	memLimit := getEnvInt("MEM_LIMIT_MB", 50)
+	debug.SetMemoryLimit(int64(memLimit) * 1024 * 1024)
+	log.Printf("[Resource] Memory limit: %d MB", memLimit)
+}
+
+func getEnvInt(key string, defaultVal int) int {
+	if val := os.Getenv(key); val != "" {
+		if i, err := strconv.Atoi(val); err == nil {
+			return i
+		}
+	}
+	return defaultVal
 }
