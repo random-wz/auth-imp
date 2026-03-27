@@ -173,3 +173,17 @@ func (h *Handler) Logout(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
 }
+
+// Online POST /api/v1/auth/online
+func (h *Handler) Online(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	if err := h.userSvc.SetOnline(userID, true); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to set online"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "online", "user_id": userID})
+}

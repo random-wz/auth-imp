@@ -48,6 +48,7 @@ func SetupRouter(h *Handler, dh *DirectoryHandler, authSvc *auth.Service) *gin.E
 		authProtected.Use(JWTMiddleware(authSvc))
 		{
 			authProtected.POST("/logout", h.Logout)
+			authProtected.POST("/online", h.Online)
 		}
 
 		// 用户路由（需要 JWT）

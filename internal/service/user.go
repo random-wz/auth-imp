@@ -145,3 +145,8 @@ func (s *UserService) GetSyncJob(id string) (*model.SyncJob, error) {
 func (s *UserService) Logout(userID string) error {
 	return s.userStore.Update(&model.User{ID: userID, IsOnline: false})
 }
+
+// SetOnline 设置用户在线状态
+func (s *UserService) SetOnline(userID string, online bool) error {
+	return s.userStore.Update(&model.User{ID: userID, IsOnline: online})
+}
