@@ -138,6 +138,16 @@ func (h *Handler) GetSyncJob(c *gin.Context) {
 	c.JSON(http.StatusOK, job)
 }
 
+// GetOnlineCount GET /api/v1/users/online/count
+func (h *Handler) GetOnlineCount(c *gin.Context) {
+	count, err := h.userSvc.GetOnlineCount()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get online count"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"count": count})
+}
+
 // JWTMiddleware JWT 认证中间件
 func JWTMiddleware(authSvc *auth.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {

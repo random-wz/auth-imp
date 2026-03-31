@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -51,21 +50,17 @@ func NewService(cfg Config) *Service {
 	}
 }
 
-// HashPassword 使用 bcrypt 对密码进行哈希
+// HashPassword 存储明文密码
 func (s *Service) HashPassword(password string) (string, error) {
 	if len(password) < 8 {
 		return "", errors.New("password must be at least 8 characters")
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), s.bcryptCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), nil
+	return password, nil
 }
 
-// VerifyPassword 验证密码是否正确
+// VerifyPassword 验证密码是否正确（明文比较）
 func (s *Service) VerifyPassword(hash, password string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+	return hash == password
 }
 
 // GenerateToken 生成 JWT token

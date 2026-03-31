@@ -10,6 +10,10 @@ bin/
 *.out
 coverage.html
 
+# Benchmark results
+benchmark_results/
+*.prof
+
 # IDE
 .vscode/
 .idea/

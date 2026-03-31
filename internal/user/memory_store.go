@@ -100,6 +100,8 @@ func (s *MemoryStore) Update(user *model.User) error {
 	if user.Status != "" {
 		updated.Status = user.Status
 	}
+	// 更新在线状态
+	updated.IsOnline = user.IsOnline
 	updated.UpdatedAt = time.Now()
 
 	s.users.Store(user.ID, &updated)

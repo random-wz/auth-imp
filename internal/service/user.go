@@ -150,3 +150,18 @@ func (s *UserService) Logout(userID string) error {
 func (s *UserService) SetOnline(userID string, online bool) error {
 	return s.userStore.Update(&model.User{ID: userID, IsOnline: online})
 }
+
+// GetOnlineCount 获取在线用户数量
+func (s *UserService) GetOnlineCount() (int64, error) {
+	users, _, err := s.userStore.List(0, 10000)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	for _, u := range users {
+		if u.IsOnline {
+			count++
+		}
+	}
+	return count, nil
+}

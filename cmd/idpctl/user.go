@@ -98,6 +98,20 @@ func userCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(createCmd, getCmd, listCmd, updateCmd, deleteCmd)
+	onlineCountCmd := &cobra.Command{
+		Use:   "online-count",
+		Short: "Get online user count",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			resp, err := restCall("GET", "/api/v1/users/online/count", nil)
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(resp))
+			return nil
+		},
+	}
+
+	cmd.AddCommand(createCmd, getCmd, listCmd, updateCmd, deleteCmd, onlineCountCmd)
 	return cmd
 }

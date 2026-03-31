@@ -15,6 +15,7 @@ import (
 	"github.com/idp-service/internal/directory"
 	"github.com/idp-service/internal/model"
 	"github.com/idp-service/internal/service"
+	"github.com/idp-service/internal/udp"
 	"github.com/idp-service/internal/uds"
 	"github.com/idp-service/internal/user"
 )
@@ -55,6 +56,12 @@ func main() {
 		log.Fatalf("Failed to start UDS server: %v", err)
 	}
 
+	// 初始化 UDP 服务端
+	udpServer := udp.NewServer(":8888", userSvc)
+	if err := udpServer.Start(); err != nil {
+		log.Fatalf("Failed to start UDP server: %v", err)
+	}
+
 	// 初始化 REST API
 	handler := api.NewHandler(userSvc, authSvc)
 	dirHandler := api.NewDirectoryHandler(dirSvc)
@@ -73,6 +80,7 @@ func main() {
 
 	<-quit
 	log.Println("Shutting down...")
+	udpServer.Stop()
 	udsServer.Stop()
 }
 

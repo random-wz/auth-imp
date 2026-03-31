@@ -57,6 +57,7 @@ func SetupRouter(h *Handler, dh *DirectoryHandler, authSvc *auth.Service) *gin.E
 		{
 			users.POST("", h.CreateUser)
 			users.GET("", h.ListUsers)
+			users.GET("/online/count", h.GetOnlineCount)
 			users.GET("/:id", h.GetUser)
 			users.PUT("/:id", h.UpdateUser)
 			users.DELETE("/:id", h.DeleteUser)
